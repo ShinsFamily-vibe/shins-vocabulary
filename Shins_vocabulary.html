@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>가족 단어장</title>
+
+    <!-- PWA & iOS 설정 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="단어장">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1a2e">
+
+    <!-- 홈 화면 아이콘 (SVG 데이터 URI) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%231a1a2e' width='100' height='100' rx='20'/><text x='50' y='65' font-size='50' text-anchor='middle'>📚</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            padding-left: calc(20px + env(safe-area-inset-left));
+            padding-right: calc(20px + env(safe-area-inset-right));
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .api-section {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .api-section label {
+            font-weight: 600;
+        }
+
+        .api-section input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            background: rgba(255,255,255,0.9);
+        }
+
+        /* User Selection */
+        .user-selection {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .user-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            min-width: 100px;
+        }
+
+        .user-btn .icon {
+            font-size: 2rem;
+        }
+
+        .user-btn.dad {
+            background: linear-gradient(135deg, #4a90a4 0%, #2c5364 100%);
+            color: white;
+        }
+
+        .user-btn.mom {
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+            color: white;
+        }
+
+        .user-btn.son {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+
+        .user-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .user-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        /* Main Content */
+        .main-content {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #1a1a2e;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Search Section */
+        .search-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-section input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+        }
+
+        .search-section button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-section button:hover {
+            transform: translateY(-2px);
+        }
+
+        .search-section button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* iOS/모바일 터치 개선 */
+        @media (max-width: 768px) {
+            .user-selection {
+                gap: 10px;
+            }
+
+            .user-btn {
+                padding: 12px 20px;
+                min-width: 80px;
+            }
+
+            .user-btn .icon {
+                font-size: 1.5rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+
+            .search-section {
+                flex-wrap: wrap;
+            }
+
+            .search-section input {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .auto-read-toggle {
+                width: 100%;
+                justify-content: center;
+                margin-top: 10px;
+            }
+
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Result Card */
+        .result-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card h2 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .result-card .meaning {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .result-card .examples {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .result-card .examples h3 {
+            color: #90caf9;
+            margin-bottom: 10px;
+        }
+
+        .result-card .example-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            line-height: 1.6;
+        }
+
+        .result-card .example-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-card .example-en {
+            color: #fff;
+            font-size: 1.05rem;
+        }
+
+        .result-card .example-ko {
+            color: #aaa;
+            font-size: 0.95rem;
+            margin-top: 5px;
+        }
+
+        .speak-word-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+
+        .speak-word-btn:hover {
+            background: #43A047;
+        }
+
+        .read-all-btn {
+            background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .read-all-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .read-all-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .read-all-btn.speaking {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+        }
+
+        .auto-read-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .auto-read-toggle input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .auto-read-toggle label {
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        /* Word List */
+        .word-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .word-item .word-info {
+            flex: 1;
+        }
+
+        .word-item .word-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .word-item .word-meaning {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .word-item .word-count {
+            background: #e91e63;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .word-item .delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Quiz Section */
+        .quiz-card {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .quiz-word {
+            font-size: 3rem;
+            color: #ffd700;
+            margin-bottom: 30px;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-option {
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-option:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .quiz-option.correct {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .quiz-option.wrong {
+            background: #f44336;
+            border-color: #f44336;
+        }
+
+        .quiz-score {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .quiz-next-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #90caf9;
+        }
+
+        .context-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+
+        .context-badge.dad {
+            background: linear-gradient(135deg, #4a90a4 0%, #2c5364 100%);
+        }
+
+        .context-badge.mom {
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+        }
+
+        .context-badge.son {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        /* Related Words Section */
+        .related-words {
+            margin-top: 20px;
+            background: rgba(255, 152, 0, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .related-words h3 {
+            color: #ff9800;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .related-word-item {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .related-word-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .related-word-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .related-word-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffcc80;
+        }
+
+        .related-word-meaning {
+            color: #aaa;
+            font-size: 0.95rem;
+        }
+
+        .related-word-example {
+            padding-left: 10px;
+            border-left: 3px solid rgba(255, 152, 0, 0.5);
+        }
+
+        .related-word-example .example-en {
+            font-size: 0.95rem;
+        }
+
+        .related-word-example .example-ko {
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>가족 단어장</h1>
+
+        <div class="api-section">
+            <label for="apiKey">Gemini API Key:</label>
+            <input type="password" id="apiKey" placeholder="API 키를 입력하세요">
+        </div>
+
+        <div class="user-selection">
+            <button class="user-btn dad" data-user="dad">
+                <span class="icon">👔</span>
+                <span>Dad</span>
+            </button>
+            <button class="user-btn mom" data-user="mom">
+                <span class="icon">👩‍🍳</span>
+                <span>Mom</span>
+            </button>
+            <button class="user-btn son" data-user="son">
+                <span class="icon">🎒</span>
+                <span>Son</span>
+            </button>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="search">단어 검색</button>
+                <button class="tab-btn" data-tab="list">저장된 단어</button>
+                <button class="tab-btn" data-tab="quiz">퀴즈</button>
+            </div>
+
+            <!-- Search Tab -->
+            <div class="tab-content active" id="search-tab">
+                <div class="search-section">
+                    <input type="text" id="wordInput" placeholder="영어 단어를 입력하세요..." />
+                    <button id="searchBtn">검색</button>
+                    <div class="auto-read-toggle">
+                        <input type="checkbox" id="autoRead" checked>
+                        <label for="autoRead">자동 읽기</label>
+                    </div>
+                </div>
+                <div id="searchResult"></div>
+            </div>
+
+            <!-- Word List Tab -->
+            <div class="tab-content" id="list-tab">
+                <div class="word-list" id="wordList"></div>
+            </div>
+
+            <!-- Quiz Tab -->
+            <div class="tab-content" id="quiz-tab">
+                <div id="quizContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elements
+        const apiKeyInput = document.getElementById('apiKey');
+        const wordInput = document.getElementById('wordInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const searchResult = document.getElementById('searchResult');
+        const wordList = document.getElementById('wordList');
+        const quizContent = document.getElementById('quizContent');
+
+        // State
+        let currentUser = 'dad';
+        let quizWords = [];
+        let quizIndex = 0;
+        let quizScore = 0;
+
+        // User context descriptions
+        const userContexts = {
+            dad: {
+                name: 'Dad',
+                icon: '👔',
+                description: '비즈니스 환경에서 임원들이 사업 파트너나 이사회를 대상으로 사용하는 격식있고 전문적인 표현',
+                prompt: 'You are helping a business executive learn English vocabulary. Provide example sentences that would be used in corporate settings, board meetings, business negotiations, or when speaking with business partners. The examples should be formal and professional.'
+            },
+            mom: {
+                name: 'Mom',
+                icon: '👩‍🍳',
+                description: '일상생활, 대학생들 사이, 또는 동네 가게에서 사용하는 친근하고 자연스러운 표현',
+                prompt: 'You are helping someone learn everyday English vocabulary. Provide example sentences that would be used in daily life situations, casual conversations among college students, or at local neighborhood shops. The examples should be friendly and natural.'
+            },
+            son: {
+                name: 'Son',
+                icon: '🎒',
+                description: '중학교, 고등학교에서 학생들이 주로 사용하는 표현 + 유사 단어',
+                prompt: 'You are helping a middle/high school student learn English vocabulary. Provide example sentences that would be used in school settings, among teenage students, in classrooms, or school activities. The examples should be age-appropriate and relatable for teens.',
+                includeRelated: true
+            }
+        };
+
+        // Load saved API key
+        const savedApiKey = localStorage.getItem('gemini_api_key');
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+        }
+
+        apiKeyInput.addEventListener('change', () => {
+            localStorage.setItem('gemini_api_key', apiKeyInput.value);
+        });
+
+        // User selection
+        document.querySelectorAll('.user-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentUser = btn.dataset.user;
+                updateWordList();
+                searchResult.innerHTML = '';
+            });
+        });
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab + '-tab').classList.add('active');
+
+                if (btn.dataset.tab === 'list') {
+                    updateWordList();
+                } else if (btn.dataset.tab === 'quiz') {
+                    startQuiz();
+                }
+            });
+        });
+
+        // Search functionality
+        searchBtn.addEventListener('click', searchWord);
+        wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') searchWord();
+        });
+
+        async function searchWord() {
+            const word = wordInput.value.trim().toLowerCase();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                searchResult.innerHTML = '<div class="loading">API 키를 입력해주세요.</div>';
+                return;
+            }
+
+            if (!word) {
+                searchResult.innerHTML = '<div class="loading">단어를 입력해주세요.</div>';
+                return;
+            }
+
+            searchBtn.disabled = true;
+            searchResult.innerHTML = '<div class="loading">검색 중...</div>';
+
+            const context = userContexts[currentUser];
+            let prompt;
+
+            if (context.includeRelated) {
+                // Son: 유사 단어 포함
+                prompt = `${context.prompt}
+
+For the English word "${word}", provide:
+1. The Korean meaning (brief, 1-2 words)
+2. Three example sentences appropriate for the context described above
+3. Three related/similar words with their meanings and one example sentence each
+
+Format your response EXACTLY as JSON:
+{
+    "word": "${word}",
+    "meaning": "Korean meaning here",
+    "examples": [
+        {"en": "English sentence 1", "ko": "Korean translation 1"},
+        {"en": "English sentence 2", "ko": "Korean translation 2"},
+        {"en": "English sentence 3", "ko": "Korean translation 3"}
+    ],
+    "relatedWords": [
+        {"word": "related word 1", "meaning": "Korean meaning", "example": {"en": "Example sentence", "ko": "Korean translation"}},
+        {"word": "related word 2", "meaning": "Korean meaning", "example": {"en": "Example sentence", "ko": "Korean translation"}},
+        {"word": "related word 3", "meaning": "Korean meaning", "example": {"en": "Example sentence", "ko": "Korean translation"}}
+    ]
+}
+
+Only respond with the JSON, no other text.`;
+            } else {
+                prompt = `${context.prompt}
+
+For the English word "${word}", provide:
+1. The Korean meaning (brief, 1-2 words)
+2. Three example sentences appropriate for the context described above
+
+Format your response EXACTLY as JSON:
+{
+    "word": "${word}",
+    "meaning": "Korean meaning here",
+    "examples": [
+        {"en": "English sentence 1", "ko": "Korean translation 1"},
+        {"en": "English sentence 2", "ko": "Korean translation 2"},
+        {"en": "English sentence 3", "ko": "Korean translation 3"}
+    ]
+}
+
+Only respond with the JSON, no other text.`;
+            }
+
+            try {
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error?.message || '요청 실패');
+                }
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) throw new Error('응답이 없습니다.');
+
+                // Parse JSON from response
+                const jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (!jsonMatch) throw new Error('올바른 응답 형식이 아닙니다.');
+
+                const result = JSON.parse(jsonMatch[0]);
+                displayResult(result);
+                saveWord(result);
+
+            } catch (error) {
+                searchResult.innerHTML = `<div class="loading">오류: ${error.message}</div>`;
+            } finally {
+                searchBtn.disabled = false;
+            }
+        }
+
+        let currentResult = null;
+        let isReadingAll = false;
+        let readQueue = [];
+
+        function displayResult(result) {
+            currentResult = result;
+            const context = userContexts[currentUser];
+
+            // 유사 단어 섹션 생성 (Son만 해당)
+            let relatedWordsHtml = '';
+            if (result.relatedWords && result.relatedWords.length > 0) {
+                relatedWordsHtml = `
+                    <div class="related-words">
+                        <h3>📚 유사 단어</h3>
+                        ${result.relatedWords.map((rw, idx) => `
+                            <div class="related-word-item" id="related-${idx}">
+                                <div class="related-word-header">
+                                    <span class="related-word-text">${rw.word}</span>
+                                    <button class="speak-word-btn" onclick="speakWord('${rw.word}')">🔊</button>
+                                    <span class="related-word-meaning">${rw.meaning}</span>
+                                </div>
+                                <div class="related-word-example">
+                                    <div class="example-en">${rw.example.en} <button class="speak-word-btn" onclick="speakWord('${rw.example.en.replace(/'/g, "\\'")}')">🔊</button></div>
+                                    <div class="example-ko">${rw.example.ko}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            searchResult.innerHTML = `
+                <div class="result-card">
+                    <h2>${result.word} <button class="speak-word-btn" onclick="speakWord('${result.word}')">🔊</button></h2>
+                    <div class="context-badge ${currentUser}">${context.icon} ${context.name} 맞춤</div>
+                    <div class="meaning">${result.meaning}</div>
+                    <div class="examples">
+                        <h3>예문</h3>
+                        ${result.examples.map((ex, idx) => `
+                            <div class="example-item" id="example-${idx}">
+                                <div class="example-en">${ex.en} <button class="speak-word-btn" onclick="speakWord('${ex.en.replace(/'/g, "\\'")}')">🔊</button></div>
+                                <div class="example-ko">${ex.ko}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${relatedWordsHtml}
+                    <button class="read-all-btn" id="readAllBtn" onclick="toggleReadAll()">
+                        🔊 전체 읽기
+                    </button>
+                </div>
+            `;
+
+            // 자동 읽기가 켜져 있으면 전체 읽기 시작
+            if (document.getElementById('autoRead').checked) {
+                setTimeout(() => readAll(), 500);
+            }
+        }
+
+        function speakWord(text, callback) {
+            const utterance = new SpeechSynthesisUtterance(text);
+
+            // 영어 음성 찾기
+            const voices = speechSynthesis.getVoices();
+            const englishVoice = voices.find(voice =>
+                voice.lang.startsWith('en-') && voice.name.includes('Google')
+            ) || voices.find(voice => voice.lang.startsWith('en-'));
+
+            if (englishVoice) {
+                utterance.voice = englishVoice;
+            }
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+
+            if (callback) {
+                utterance.onend = callback;
+            }
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function toggleReadAll() {
+            if (isReadingAll) {
+                stopReadAll();
+            } else {
+                readAll();
+            }
+        }
+
+        function readAll() {
+            if (!currentResult) return;
+
+            isReadingAll = true;
+            updateReadAllButton();
+
+            // 읽을 내용 큐에 추가
+            readQueue = [
+                currentResult.word,
+                ...currentResult.examples.map(ex => ex.en)
+            ];
+
+            // 유사 단어가 있으면 추가 (Son)
+            if (currentResult.relatedWords) {
+                currentResult.relatedWords.forEach(rw => {
+                    readQueue.push(rw.word);
+                    readQueue.push(rw.example.en);
+                });
+            }
+
+            readNextInQueue();
+        }
+
+        function readNextInQueue() {
+            if (!isReadingAll || readQueue.length === 0) {
+                stopReadAll();
+                return;
+            }
+
+            const text = readQueue.shift();
+
+            // 현재 읽고 있는 예문 하이라이트
+            highlightCurrentExample(text);
+
+            speakWord(text, () => {
+                // 다음 항목 읽기 전 잠시 대기
+                setTimeout(() => readNextInQueue(), 300);
+            });
+        }
+
+        function highlightCurrentExample(text) {
+            // 모든 예문 하이라이트 제거
+            document.querySelectorAll('.example-item, .related-word-item').forEach(el => {
+                el.style.background = '';
+            });
+
+            // 현재 읽고 있는 예문 하이라이트
+            if (currentResult) {
+                currentResult.examples.forEach((ex, idx) => {
+                    if (ex.en === text) {
+                        const el = document.getElementById(`example-${idx}`);
+                        if (el) {
+                            el.style.background = 'rgba(0, 188, 212, 0.2)';
+                            el.style.borderRadius = '8px';
+                        }
+                    }
+                });
+
+                // 유사 단어 하이라이트
+                if (currentResult.relatedWords) {
+                    currentResult.relatedWords.forEach((rw, idx) => {
+                        if (rw.word === text || rw.example.en === text) {
+                            const el = document.getElementById(`related-${idx}`);
+                            if (el) {
+                                el.style.background = 'rgba(255, 152, 0, 0.2)';
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        function stopReadAll() {
+            isReadingAll = false;
+            readQueue = [];
+            speechSynthesis.cancel();
+            updateReadAllButton();
+
+            // 하이라이트 제거
+            document.querySelectorAll('.example-item').forEach(el => {
+                el.style.background = '';
+            });
+        }
+
+        function updateReadAllButton() {
+            const btn = document.getElementById('readAllBtn');
+            if (btn) {
+                if (isReadingAll) {
+                    btn.innerHTML = '⏹ 읽기 중지';
+                    btn.classList.add('speaking');
+                } else {
+                    btn.innerHTML = '🔊 전체 읽기';
+                    btn.classList.remove('speaking');
+                }
+            }
+        }
+
+        // 음성 목록 로드
+        speechSynthesis.onvoiceschanged = () => {
+            speechSynthesis.getVoices();
+        };
+
+        function getStorageKey() {
+            return `vocabulary_${currentUser}`;
+        }
+
+        function getWords() {
+            const saved = localStorage.getItem(getStorageKey());
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveWord(result) {
+            const words = getWords();
+            const word = result.word.toLowerCase();
+
+            if (words[word]) {
+                words[word].count += 1;
+                words[word].lastSearched = Date.now();
+            } else {
+                words[word] = {
+                    word: result.word,
+                    meaning: result.meaning,
+                    examples: result.examples,
+                    count: 1,
+                    lastSearched: Date.now()
+                };
+            }
+
+            localStorage.setItem(getStorageKey(), JSON.stringify(words));
+        }
+
+        function deleteWord(word) {
+            const words = getWords();
+            delete words[word];
+            localStorage.setItem(getStorageKey(), JSON.stringify(words));
+            updateWordList();
+        }
+
+        function updateWordList() {
+            const words = getWords();
+            const wordArray = Object.values(words).sort((a, b) => b.lastSearched - a.lastSearched);
+
+            if (wordArray.length === 0) {
+                wordList.innerHTML = '<div class="empty-message">저장된 단어가 없습니다.<br>단어를 검색하면 자동으로 저장됩니다.</div>';
+                return;
+            }
+
+            wordList.innerHTML = wordArray.map(w => `
+                <div class="word-item">
+                    <div class="word-info">
+                        <span class="word-text">${w.word}</span>
+                        ${w.count > 1 ? `<span class="word-count">${w.count}회 검색</span>` : ''}
+                        <div class="word-meaning">${w.meaning}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteWord('${w.word}')">삭제</button>
+                </div>
+            `).join('');
+        }
+
+        function startQuiz() {
+            const words = getWords();
+            const wordArray = Object.values(words);
+
+            if (wordArray.length < 4) {
+                quizContent.innerHTML = '<div class="empty-message">퀴즈를 시작하려면 최소 4개의 단어가 필요합니다.<br>단어를 더 검색해주세요.</div>';
+                return;
+            }
+
+            // Sort by count (frequently searched first) and pick words
+            quizWords = [...wordArray].sort((a, b) => b.count - a.count);
+            quizIndex = 0;
+            quizScore = 0;
+
+            showQuizQuestion();
+        }
+
+        function showQuizQuestion() {
+            if (quizIndex >= Math.min(10, quizWords.length)) {
+                quizContent.innerHTML = `
+                    <div class="quiz-card">
+                        <h2>퀴즈 완료!</h2>
+                        <div class="quiz-score">점수: ${quizScore} / ${quizIndex}</div>
+                        <button class="quiz-next-btn" onclick="startQuiz()">다시 시작</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const currentWord = quizWords[quizIndex];
+            const otherWords = quizWords.filter(w => w.word !== currentWord.word);
+            const wrongAnswers = shuffleArray(otherWords).slice(0, 3);
+            const options = shuffleArray([currentWord, ...wrongAnswers]);
+
+            quizContent.innerHTML = `
+                <div class="quiz-card">
+                    <div class="quiz-score">문제 ${quizIndex + 1} / ${Math.min(10, quizWords.length)} | 점수: ${quizScore}</div>
+                    <div class="quiz-word">${currentWord.word}</div>
+                    <div class="quiz-options">
+                        ${options.map(opt => `
+                            <button class="quiz-option" data-correct="${opt.word === currentWord.word}" onclick="checkAnswer(this, '${currentWord.word}')">
+                                ${opt.meaning}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkAnswer(btn, correctWord) {
+            const isCorrect = btn.dataset.correct === 'true';
+
+            document.querySelectorAll('.quiz-option').forEach(opt => {
+                opt.disabled = true;
+                if (opt.dataset.correct === 'true') {
+                    opt.classList.add('correct');
+                } else if (opt === btn && !isCorrect) {
+                    opt.classList.add('wrong');
+                }
+            });
+
+            if (isCorrect) quizScore++;
+            quizIndex++;
+
+            setTimeout(() => {
+                showQuizQuestion();
+            }, 1500);
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Initialize
+        document.querySelector('.user-btn.dad').classList.add('active');
+    </script>
+</body>
+</html>
